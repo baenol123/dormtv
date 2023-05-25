@@ -101,34 +101,142 @@ color: #e91e63; /* 헤더 셀 글자색 설정 */
 
 <h3>야간집회 폼 미쳤다</h3>
 
-<img src=“https://ww.kyongbuk.co.kr/news/photo/202001/2028511_438827_4357.jpg” alt=“박원필” width=“500”>
+<img src=“https://www.kyongbuk.co.kr/news/photo/202001/2028511_438827_4357.jpg” alt=“박원필” width=“500”>
 
-<h3>오늘의 급식</h3>
+ <h1>테스트용</h1>
+  <div>
+    <label for="date-input">날짜:</label>
+    <input type="date" id="date-input">
+    <button onclick="getData()">조회</button>
+  </div>
+  <div class="meal-container">
+    <div class="meal-column">
+      <h2>조식</h2>
+      <div id="breakfast-result"></div>
+    </div>
+    <div class="meal-column">
+      <h2>중식</h2>
+      <div id="lunch-result"></div>
+    </div>
+    <div class="meal-column">
+      <h2>석식</h2>
+      <div id="dinner-result"></div>
+    </div>
+  </div>
 
-<table>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // API 요청을 보내고 결과를 표시하는 함수
+    function displayData(response, mealType) {
+      var mealContainer;
 
-<tr>
+      if (mealType === "1") {
+        mealContainer = document.getElementById('breakfast-result');
+      } else if (mealType === "2") {
+        mealContainer = document.getElementById('lunch-result');
+      } else if (mealType === "3") {
+        mealContainer = document.getElementById('dinner-result');
+      }
 
-<th>아침</th>
+      mealContainer.innerHTML = '';
 
-<th>점심</th>
+      if (response !== undefined && response.mealServiceDietInfo.length > 0) {
+        var meals = response.mealServiceDietInfo[1].row; // 두 번째 항목의 급식 데이터 가져오기
 
-<th>저녁</th>
+        for (var i = 0; i < meals.length; i++) {
+          var mealItem = document.createElement('div');
+          mealItem.classList.add('meal-item');
 
-</tr>
+          var mealTitle = document.createElement('pre');
+          mealTitle.classList.add('meal-title');
+          mealTitle.textContent = meals[i].DDISH_NM.replace(/<br\/>/g, '\n');
 
-<tr>
+          mealItem.appendChild(mealTitle);
+          mealContainer.appendChild(mealItem);
+        }
+      } else {
+        mealContainer.textContent = '찾는 데이터가 없습니다.';
+      }
+    }
 
-<td>백미밥 (조)<br>도너츠 (바바리안쉘) (1.2.5.6.)<br>닭곰탕 (15.)<br>코다리무조림 (5.6.13.)<br>실곤약무침** (5.6.12.13.)<br>떡갈비구이/케찹* (5.6.10.12.15.16.)<br>깍두기 (완) (9.)</td>
+    // API 요청을 보내고 결과를 가져오는 함수
+    function getData() {
+      var URL = "https://open.neis.go.kr/hub/mealServiceDietInfo"; // API 엔드포인트 URL
+      var params = {
+        "KEY": "aadbb67b33224556a715ad2d41d2c442",
+        "Type": "json",
+        "pIndex": 1,
+        "pSize": 100,
+        "ATPT_OFCDC_SC_CODE": "R10",
+        "SD_SCHUL_CODE": "8750542",
+        "MMEAL_SC_CODE": "",
+        "MLSV_YMD": "",
+      };
 
-<td>흑미기장밥<br>들깨미역국** (5.6.)<br>달걀찜 (1.)<br>돈육수육/쌈장 (4.5.6.10.13.)<br>무말랭이무침 (5.6.13.)<br>해물부추전 (1.5.6.9.13.17.18.)<br>배추김치 (완) (9.)<br>수제초코머핀 (1.2.5.6.)</td>
+      // 오늘 날짜 설정
+      var today = new Date();
+      var year = today.getFullYear();
+      var month = String(today.getMonth() + 1).padStart(2, '0');
+      var day = String(today.getDate()).padStart(2, '0');
+      var formattedDate = year + month + day;
 
-<td>중화비빔밥 (1.5.6.9.10.13.)<br>미역된장국 (5.6.)<br>꼬들단무지무침<br>달걀후라이 (1.5.)<br>배추김치 (완) (9.)<br>애플망고에이드<br>치킨텐더 (15.)</td>
+      // 선택한 날짜 가져오기
+      var dateInput = document.getElementById('date-input');
+      var selectedDate = dateInput.value;
+      params.MLSV_YMD = selectedDate.replaceAll("-", ""); // 날짜 형식 변환
 
-</tr>
+      // 기본값으로 오늘 날짜로 설정
+      if (selectedDate === "") {
+        params.MLSV_YMD = formattedDate;
+      }
 
-</table>
+      // 조식 요청 보내기
+      params.MMEAL_SC_CODE = "1"; // 조식 코드인 1로 설정
+      $.ajax({
+        url: URL,
+        data: params,
+        dataType: 'json',
+        success: function(response) {
+          displayData(response, "1");
+        },
+        error: function(xhr, status, error) {
+          $('#breakfast-result').html("찾는 데이터가 없습니다.");
+        }
+      });
 
+      // 중식 요청 보내기
+      params.MMEAL_SC_CODE = "2"; // 중식 코드인 2로 설정
+      $.ajax({
+        url: URL,
+        data: params,
+        dataType: 'json',
+        success: function(response) {
+          displayData(response, "2");
+        },
+        error: function(xhr, status, error) {
+          $('#lunch-result').html("찾는 데이터가 없습니다.");
+        }
+      });
+
+      // 석식 요청 보내기
+      params.MMEAL_SC_CODE = "3"; // 석식 코드인 3으로 설정
+      $.ajax({
+        url: URL,
+        data: params,
+        dataType: 'json',
+        success: function(response) {
+          displayData(response, "3");
+        },
+        error: function(xhr, status, error) {
+          $('#dinner-result').html("찾는 데이터가 없습니다.");
+        }
+      });
+    }
+
+    // 페이지 로드 시 데이터 가져오기
+    $(document).ready(function() {
+      getData();
+    });
+  </script>
 </body>
-
 </html>
